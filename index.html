@@ -45830,6 +45830,10 @@ void main() {
     scene2.add(stage);
     scene2.fog = new FogExp2(15919836, 12e-4);
     const groundTex = makeGroundTexture();
+    const groundBase = document.createElement("canvas");
+    groundBase.width = groundTex.image.width;
+    groundBase.height = groundTex.image.height;
+    groundBase.getContext("2d").drawImage(groundTex.image, 0, 0);
     const ground = new Mesh(
       new PlaneGeometry(88, 36),
       new MeshLambertMaterial({ map: groundTex })
@@ -45953,6 +45957,30 @@ void main() {
       kit.box(flowerGroup, 0.035, h, 0.05, i % 3 ? "#5b743d" : "#70864b", x, h / 2, z, { castShadow: false, rotation: [0, Math.random() * 3, 0.12] });
     }
     flowerGroup.scale.setScalar(0.85);
+    const flowerMid = new Group();
+    const flowerLate = new Group();
+    stage.add(flowerMid, flowerLate);
+    const flowerColors2 = ["#d76b61", "#e4bd58", "#e5ded0", "#c78a9d", "#d9a35a"];
+    function addFlowerBed(group, count, minX, maxX, grassCount) {
+      for (let i = 0; i < count; i++) {
+        const x = minX + Math.random() * (maxX - minX);
+        const z = 6.1 + Math.random() * 1.45;
+        const h = 0.08 + Math.random() * 0.18;
+        kit.cyl(group, 0.012, 0.018, h, 4, "#4f6a35", x, h / 2, z, { castShadow: false });
+        kit.ico(group, 0.08 + Math.random() * 0.06, 0, flowerColors2[i % flowerColors2.length], x, h + 0.03, z, { castShadow: false });
+        if (i % 2 === 0) kit.ico(group, 0.045, 0, "#e7dcc0", x + 0.08, h + 0.02, z + 0.05, { castShadow: false });
+      }
+      for (let i = 0; i < grassCount; i++) {
+        const x = minX + Math.random() * (maxX - minX);
+        const z = 6 + Math.random() * 1.6;
+        const h = 0.09 + Math.random() * 0.2;
+        kit.box(group, 0.035, h, 0.05, i % 3 ? "#5b743d" : "#70864b", x, h / 2, z, { castShadow: false, rotation: [0, Math.random() * 3, 0.12] });
+      }
+    }
+    addFlowerBed(flowerMid, 36, -42, -8, 44);
+    addFlowerBed(flowerLate, 32, -42, -4, 36);
+    flowerMid.visible = false;
+    flowerLate.visible = false;
     for (const x of [-32, -17, 0, 15, 28, 39]) {
       const g = new Group();
       g.position.set(x, GROUND_Y2, x > 30 ? 2.7 : 2.8);
@@ -46172,7 +46200,7 @@ void main() {
       for (const tree of treeCanopies) {
         const east = clamp3((tree.x + 42) / 84, 0, 1);
         const wither = clamp3(Math.pow(east, 1.35) * reach * 1.2, 0, 1);
-        tree.mesh.count = Math.max(3, Math.round(tree.count * (1 - 0.72 * wither)));
+        tree.mesh.count = Math.max(2, Math.round(tree.count * (1 - 0.88 * wither)));
         for (let i = 0; i < tree.count; i++) {
           const base2 = tree.colors[i];
           const dry = autumn[(i + tree.seed) % autumn.length];
@@ -46185,6 +46213,32 @@ void main() {
       const active = Math.floor(fallCount * clamp3((age - 0.16) / 0.84, 0, 1));
       fallMesh.count = active;
       flowerGroup.scale.setScalar(0.9 + 0.32 * clamp3(age * 1.2, 0, 1));
+      flowerMid.visible = age >= 0.42;
+      flowerLate.visible = age >= 0.72;
+      flowerMid.scale.setScalar(0.85 + 0.3 * clamp3((age - 0.42) / 0.58, 0, 1));
+      flowerLate.scale.setScalar(0.85 + 0.3 * clamp3((age - 0.72) / 0.28, 0, 1));
+    }
+    function paintGroundFade(color2, p) {
+      const canvas2 = groundTex.image;
+      const ctx = canvas2.getContext("2d");
+      ctx.clearRect(0, 0, canvas2.width, canvas2.height);
+      ctx.drawImage(groundBase, 0, 0);
+      const opacity = clamp3((p - 0.08) / 0.74, 0, 1);
+      if (opacity <= 1e-3) {
+        groundTex.needsUpdate = true;
+        return;
+      }
+      const h = color2.getHexString();
+      const grad = ctx.createLinearGradient(0, 0, canvas2.width, 0);
+      grad.addColorStop(0, `#${h}00`);
+      grad.addColorStop(0.34, `#${h}00`);
+      grad.addColorStop(0.55, `#${h}${Math.round(0.34 * opacity * 255).toString(16).padStart(2, "0")}`);
+      grad.addColorStop(0.76, `#${h}${Math.round(0.78 * opacity * 255).toString(16).padStart(2, "0")}`);
+      grad.addColorStop(0.92, `#${h}${Math.round(opacity * 255).toString(16).padStart(2, "0")}`);
+      grad.addColorStop(1, `#${h}${Math.round(opacity * 255).toString(16).padStart(2, "0")}`);
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, canvas2.width, canvas2.height);
+      groundTex.needsUpdate = true;
     }
     function setEra(p) {
       const f = clamp3(p, 0, 1) * (ERAS.length - 1);
@@ -46215,6 +46269,7 @@ void main() {
         finalPoint.intensity = 0;
       }
       updateFoliage(p);
+      paintGroundFade(color, p);
       return color;
     }
     setEra(0);
