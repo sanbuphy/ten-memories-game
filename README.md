@@ -22,9 +22,6 @@
   <code>Web / WebGL</code> · <code>单人</code> · <code>约 15–25 分钟</code> · <code>简体中文</code> · <code>可离线</code>
 </p>
 
-<p align="center">
-  <strong>关键词 / Keywords</strong>：DeepSeek 制作 · DeepSeek 游戏 · AI 制作独立游戏 · 叙事游戏 · 怀旧游戏 · 1980 年代 · 老街 · Three.js · WebGL
-</p>
 
 ---
 
