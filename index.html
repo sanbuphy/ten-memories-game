@@ -48354,7 +48354,8 @@ void main() {
         ["\u8001\u90AE", -19.5, 2.1, 0.84, "#465e4c", "#3a4e40", "#383a32", "#cfc5b2", true, ["\u4FE1\u8D8A\u6765\u8D8A\u5C11\uFF0C\u90AE\u5C40\u4E5F\u642C\u8D70\u4E86\u3002", "\u73B0\u5728\u90FD\u6253\u7535\u8BDD\uFF0C\u8C01\u8FD8\u5199\u4FE1\u3002", "\u8FD9\u5F20\u516B\u5206\u90AE\u7968\uFF0C\u7559\u4E2A\u5FF5\u60F3\u3002"], false],
         ["\u4FEE\u978B\u9648", 21.6, 2.4, 0.83, "#675545", "#554536", "#3b372f", "#d8d0bd", true, ["\u978B\u5E95\u78E8\u7A7F\u4E86\uFF0C\u4E5F\u6CA1\u4EBA\u8865\u4E86\u3002", "\u8FD9\u6761\u8857\uFF0C\u4FEE\u978B\u7684\u53EA\u5269\u6211\u4E00\u4E2A\u3002", "\u4F60\u5750\u7740\uFF0C\u6211\u7ED9\u4F60\u628A\u978B\u8DDF\u9489\u7262\u3002"], false]
       ];
-      for (const [name, x, z, scale, shirt, shirtShade, pants, hair, glasses, lines, basket] of old) {
+      const oldCount = [4, 3, 2][stageNo - 6] || 2;
+      for (const [name, x, z, scale, shirt, shirtShade, pants, hair, glasses, lines, basket] of old.slice(0, oldCount)) {
         list.push({
           name,
           role: "\u8001\u8857\u574A",
@@ -48381,7 +48382,8 @@ void main() {
         ["\u738B\u53D4", 30.2, -1.1, "#7d6f5c", "#625846", "#cfc4ae", 5.7, ["\u6211\u5C31\u5728\u65C1\u8FB9\u770B\uFF0C\u4E0D\u8DF3\u3002", "\u5F53\u5E74\u8FD9\u6761\u8857\u591A\u70ED\u95F9\u3002", "\u73B0\u5728\u53EA\u5269\u4E0B\u6211\u4EEC\u8FD9\u4E9B\u8001\u9AA8\u5934\u3002"]],
         ["\u674E\u5A76", 33, 0.9, "#9a6a78", "#7b5260", "#e5d9c8", 6.4, ["\u6247\u5B50\u62FF\u53CD\u4E86\uFF0C\u91CD\u6765\u3002", "\u660E\u5929\u8FD8\u6765\u554A\u3002", "\u8857\u5C3E\u90A3\u76CF\u706F\uFF0C\u600E\u4E48\u53C8\u4EAE\u4E86\u3002"]]
       ];
-      for (const [name, x, z, shirt, shirtShade, hair, phase, lines] of dancers) {
+      const danceCount = [3, 2, 1][stageNo - 6] || 1;
+      for (const [name, x, z, shirt, shirtShade, hair, phase, lines] of dancers.slice(0, danceCount)) {
         list.push({
           name,
           role: "\u5E7F\u573A\u821E",
