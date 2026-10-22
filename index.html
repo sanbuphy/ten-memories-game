@@ -45991,6 +45991,78 @@ void main() {
     addFlowerBed(flowerLate, 32, -42, -4, 36);
     flowerMid.visible = false;
     flowerLate.visible = false;
+    const flowerFieldCount = 940;
+    const flowerField = [];
+    for (let i = 0; i < flowerFieldCount; i++) {
+      const x = -41.8 + Math.random() * 37.2;
+      const z = 6.02 + Math.random() * 2.35;
+      const h = 0.08 + Math.random() * 0.15;
+      const size = 0.8 + Math.random() * 0.55;
+      const threshold = clamp3((x + 41.8) / 37.2 * 0.72 + Math.random() * 0.28, 0, 1);
+      flowerField.push({ x, z, h, size, threshold, color: flowerColors[i % flowerColors.length] });
+    }
+    flowerField.sort((a, b) => a.threshold - b.threshold);
+    const flowerHeadGeo = new IcosahedronGeometry(0.055, 0);
+    const flowerHeadMat = new MeshLambertMaterial({ color: 16777215 });
+    const flowerHeads = new InstancedMesh(flowerHeadGeo, flowerHeadMat, flowerFieldCount);
+    const flowerStemGeo = new CylinderGeometry(0.011, 0.016, 0.14, 4);
+    const flowerStemMat = new MeshLambertMaterial({ color: "#4f6a35" });
+    const flowerStems = new InstancedMesh(flowerStemGeo, flowerStemMat, flowerFieldCount);
+    flowerHeads.castShadow = false;
+    flowerStems.castShadow = false;
+    flowerHeads.frustumCulled = false;
+    flowerStems.frustumCulled = false;
+    stage.add(flowerHeads, flowerStems);
+    const fieldMat = new Matrix4();
+    const fieldPos = new Vector3();
+    const fieldQuat = new Quaternion();
+    const fieldScale = new Vector3();
+    const fieldColor = new Color();
+    for (let i = 0; i < flowerFieldCount; i++) {
+      const f = flowerField[i];
+      fieldQuat.identity();
+      fieldPos.set(f.x, f.h + 0.025, f.z);
+      fieldScale.set(f.size, f.size, f.size);
+      fieldMat.compose(fieldPos, fieldQuat, fieldScale);
+      flowerHeads.setMatrixAt(i, fieldMat);
+      fieldColor.set(f.color);
+      flowerHeads.setColorAt(i, fieldColor);
+      fieldPos.set(f.x, f.h / 2, f.z);
+      fieldScale.set(1, f.h / 0.14, 1);
+      fieldMat.compose(fieldPos, fieldQuat, fieldScale);
+      flowerStems.setMatrixAt(i, fieldMat);
+    }
+    flowerHeads.instanceMatrix.needsUpdate = true;
+    flowerStems.instanceMatrix.needsUpdate = true;
+    if (flowerHeads.instanceColor) flowerHeads.instanceColor.needsUpdate = true;
+    flowerHeads.count = 0;
+    flowerStems.count = 0;
+    const grassFieldCount = 1050;
+    const grassGeo = new BoxGeometry(0.035, 0.16, 0.045);
+    const grassMat = new MeshLambertMaterial({ color: "#617a43" });
+    const grassField = new InstancedMesh(grassGeo, grassMat, grassFieldCount);
+    grassField.frustumCulled = false;
+    grassField.castShadow = false;
+    stage.add(grassField);
+    const grassData = [];
+    for (let i = 0; i < grassFieldCount; i++) {
+      const x = -41.8 + Math.random() * 37.2;
+      const z = 5.98 + Math.random() * 2.45;
+      const h = 0.7 + Math.random() * 0.8;
+      const threshold = clamp3((x + 41.8) / 37.2 * 0.7 + Math.random() * 0.3, 0, 1);
+      grassData.push({ x, z, h, threshold });
+    }
+    grassData.sort((a, b) => a.threshold - b.threshold);
+    for (let i = 0; i < grassFieldCount; i++) {
+      const g = grassData[i];
+      fieldQuat.identity();
+      fieldPos.set(g.x, 0.08, g.z);
+      fieldScale.set(1, g.h, 1);
+      fieldMat.compose(fieldPos, fieldQuat, fieldScale);
+      grassField.setMatrixAt(i, fieldMat);
+    }
+    grassField.instanceMatrix.needsUpdate = true;
+    grassField.count = 0;
     for (const x of [-32, -17, 0, 15, 28, 39]) {
       const g = new Group();
       g.position.set(x, GROUND_Y2, x > 30 ? 2.7 : 2.8);
@@ -46227,6 +46299,10 @@ void main() {
       flowerLate.visible = age >= 0.72;
       flowerMid.scale.setScalar(0.85 + 0.3 * clamp3((age - 0.42) / 0.58, 0, 1));
       flowerLate.scale.setScalar(0.85 + 0.3 * clamp3((age - 0.72) / 0.28, 0, 1));
+      const flowerActive = Math.round((0.08 + 0.92 * age) * flowerFieldCount);
+      flowerHeads.count = flowerActive;
+      flowerStems.count = flowerActive;
+      grassField.count = Math.round((0.05 + 0.95 * age) * grassFieldCount);
     }
     function paintGroundFade(color2, p) {
       const canvas2 = groundTex.image;
