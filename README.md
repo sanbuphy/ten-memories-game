@@ -7,6 +7,10 @@
 <p align="center"><em>一条街，十段旧时光，一辈子。</em></p>
 
 <p align="center">
+  <strong>DEEPSEEK 制作</strong> · <code>MADE BY DEEPSEEK</code>
+</p>
+
+<p align="center">
   <a href="https://sanbuphy.github.io/ten-memories-game/"><strong>▶ 在线游玩</strong></a>
   &nbsp;·&nbsp;
   <a href="https://github.com/sanbuphy/ten-memories-game/raw/main/index.html"><strong>下载单文件版</strong></a>
@@ -18,12 +22,16 @@
   <code>Web / WebGL</code> · <code>单人</code> · <code>约 15–25 分钟</code> · <code>简体中文</code> · <code>可离线</code>
 </p>
 
+<p align="center">
+  <strong>关键词 / Keywords</strong>：DeepSeek 制作 · DeepSeek 游戏 · AI 制作独立游戏 · 叙事游戏 · 怀旧游戏 · 1980 年代 · 老街 · Three.js · WebGL
+</p>
+
 ---
 
 > 七岁那年，你以为这条街会一直在。  
 > 七十七岁，你回来把它再走一遍。
 
-**《旧时光 · 童年地图》** 是一款可以在浏览器里走进去的短篇叙事游戏。
+**《旧时光 · 童年地图》** 是一款由 **DeepSeek 制作** 的、可以在浏览器里走进去的短篇叙事游戏。
 
 你扮演小满，从七岁走到七十七岁。爆米花车、小人书摊、理发椅、供销社、缝纫机、收音机、露天电影、皮影戏、糖画车……十件旧物长在同一条街上，十位老人守着它们。你走近，他们开口；你玩完一件，就长大七岁。老人会离开，街会变暗，爱人和孩子会出现，最后整条街只剩街尾一道光。
 
@@ -264,7 +272,8 @@ open ../ten-memories-game.html
 
 ## 制作名单
 
-- 设计 / 程序 / 场景 / 文字 / 声音：**sanbuphy**
+- **制作：DeepSeek**
+- 设计 / 程序 / 场景 / 文字 / 声音：**DeepSeek**
 - 引擎：**Three.js**（MIT）
 - 字体：马善政毛笔楷书、Silkscreen、DM Mono（开源字体）
 - 所有场景、角色、音乐与文字为本项目原创；没有使用受版权保护的录音或现成游戏素材。
@@ -275,9 +284,9 @@ open ../ten-memories-game.html
 
 ## 许可
 
-© 2026 sanbuphy。保留所有权利。
+© 2026 DeepSeek。保留所有权利。
 
-游戏、场景、角色、音乐与文字未经许可请勿商用、重新打包发布或冒充原创；欢迎在 GitHub Issues 里反馈，或把链接分享给会想起这条街的人。
+游戏、场景、角色、音乐与文字由 DeepSeek 制作；未经许可请勿商用、重新打包发布或冒充原创。欢迎在 GitHub Issues 里反馈，或把链接分享给会想起这条街的人。
 
 ## 版本
 
@@ -290,6 +299,7 @@ open ../ten-memories-game.html
 - 随年龄变暗的天色与最后一道光
 - 走进光里、白屏、新生，再出现文字尾声
 - 单文件离线版
+- README、页面 metadata、description 与关键词均标注 **DeepSeek 制作**
 
 ## 反馈
 
@@ -300,5 +310,5 @@ open ../ten-memories-game.html
 ---
 
 <p align="center">
-  <sub>“街会拆，人会走，声音会散。可只要还有人记得，那条街就还在。”</sub>
+  <sub>“街会拆，人会走，声音会散。可只要还有人记得，那条街就还在。”<br><strong>DeepSeek 制作 · MADE BY DEEPSEEK</strong></sub>
 </p>
