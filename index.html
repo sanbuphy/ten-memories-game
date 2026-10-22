@@ -826,6 +826,16 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--red);outline-offset
 
     <div id="lightHint" class="light-hint">街尾只剩一道光 <span class="arrow">→</span></div>
 
+    <div id="cyclePrompt" class="reincarnation cycle-prompt is-hidden">
+      <span class="reincarnation-kicker">街口 · 春天</span>
+      <h3>新的轮回又要开始了。</h3>
+      <p>从这里走回去，一切又会从七岁开始。</p>
+      <div class="reincarnation-actions">
+        <button id="cycleYes" class="relive-yes" type="button">回到七岁</button>
+        <button id="cycleStay" type="button">再走一会儿</button>
+      </div>
+    </div>
+
     <div id="fade" class="fade" aria-hidden="true"></div>
 
     <div id="joystick" class="joystick is-hidden" aria-label="移动摇杆">
@@ -45875,11 +45885,74 @@ void main() {
       [34, 5.9, 0.95],
       [-13, 6, 0.8]
     ];
+    const treeCanopies = [];
     trees.forEach(([x, z, s], i) => {
       const t = kit.makeTree({ x, z, scale: s, seed: 40 + i * 9, height: 3.1 + i % 3 * 0.35 });
       t.position.y = GROUND_Y2;
       stage.add(t);
+      const mesh = t.children.find((c) => c.isInstancedMesh);
+      if (mesh) {
+        const matrices = [];
+        const colors = [];
+        const m = new Matrix4();
+        const c = new Color();
+        for (let j = 0; j < mesh.count; j++) {
+          mesh.getMatrixAt(j, m);
+          mesh.getColorAt(j, c);
+          matrices.push(m.clone());
+          colors.push(c.clone());
+        }
+        treeCanopies.push({ x, mesh, matrices, colors, count: mesh.count, seed: 40 + i * 9 });
+      }
     });
+    const fallCount = 90;
+    const fallMesh = new InstancedMesh(
+      new BoxGeometry(0.065, 0.016, 0.11),
+      new MeshLambertMaterial({ color: 16777215 }),
+      fallCount
+    );
+    fallMesh.frustumCulled = false;
+    fallMesh.castShadow = false;
+    stage.add(fallMesh);
+    const fallData = [];
+    const leafPalette = ["#8b5f32", "#a8793e", "#725033", "#b08a4e"];
+    const fallColor = new Color();
+    const fallMatrix = new Matrix4();
+    const fallQuat = new Quaternion();
+    const fallScale = new Vector3();
+    const fallPos = new Vector3();
+    for (let i = 0; i < fallCount; i++) {
+      fallData.push({
+        x: -42 + Math.pow(Math.random(), 0.62) * 84,
+        z: -5 + Math.random() * 12,
+        y: 1.5 + Math.random() * 3.2,
+        speed: 0.22 + Math.random() * 0.28,
+        phase: Math.random() * Math.PI * 2,
+        spin: Math.random() * Math.PI * 2,
+        scale: 0.7 + Math.random() * 0.8
+      });
+      fallColor.set(leafPalette[i % leafPalette.length]);
+      fallMesh.setColorAt(i, fallColor);
+    }
+    fallMesh.count = 0;
+    const flowerGroup = new Group();
+    stage.add(flowerGroup);
+    const flowerColors = ["#d76b61", "#e4bd58", "#e5ded0", "#c78a9d", "#d9a35a"];
+    for (let i = 0; i < 58; i++) {
+      const x = -41.5 + Math.random() * 19;
+      const z = 6.15 + Math.random() * 1.35;
+      const h = 0.08 + Math.random() * 0.16;
+      kit.cyl(flowerGroup, 0.012, 0.018, h, 4, "#4f6a35", x, h / 2, z, { castShadow: false });
+      kit.ico(flowerGroup, 0.085 + Math.random() * 0.055, 0, flowerColors[i % flowerColors.length], x, h + 0.03, z, { castShadow: false });
+      if (i % 2 === 0) kit.ico(flowerGroup, 0.045, 0, "#e7dcc0", x + 0.08, h + 0.02, z + 0.05, { castShadow: false });
+    }
+    for (let i = 0; i < 85; i++) {
+      const x = -42 + Math.random() * 21;
+      const z = 6.05 + Math.random() * 1.55;
+      const h = 0.09 + Math.random() * 0.18;
+      kit.box(flowerGroup, 0.035, h, 0.05, i % 3 ? "#5b743d" : "#70864b", x, h / 2, z, { castShadow: false, rotation: [0, Math.random() * 3, 0.12] });
+    }
+    flowerGroup.scale.setScalar(0.85);
     for (const x of [-32, -17, 0, 15, 28, 39]) {
       const g = new Group();
       g.position.set(x, GROUND_Y2, x > 30 ? 2.7 : 2.8);
@@ -46090,6 +46163,29 @@ void main() {
       { sun: "#27303f", sunI: 0.04, sky: "#131a24", ground: "#11151a", hemiI: 0.14, amb: "#202834", ambI: 0.16, bg: "#0b0e13" }
     ];
     const color = new Color();
+    let seasonAge = 0;
+    function updateFoliage(p) {
+      const age = clamp3(p, 0, 1);
+      seasonAge = age;
+      const reach = clamp3((age - 0.08) / 0.92, 0, 1);
+      const autumn = [new Color("#8c5b33"), new Color("#ad7c42"), new Color("#6f4e32"), new Color("#b38d52")];
+      for (const tree of treeCanopies) {
+        const east = clamp3((tree.x + 42) / 84, 0, 1);
+        const wither = clamp3(Math.pow(east, 1.35) * reach * 1.2, 0, 1);
+        tree.mesh.count = Math.max(3, Math.round(tree.count * (1 - 0.72 * wither)));
+        for (let i = 0; i < tree.count; i++) {
+          const base2 = tree.colors[i];
+          const dry = autumn[(i + tree.seed) % autumn.length];
+          const c = base2.clone().lerp(dry, Math.min(1, wither * 0.92));
+          tree.mesh.setColorAt(i, c);
+        }
+        tree.mesh.instanceMatrix.needsUpdate = true;
+        if (tree.mesh.instanceColor) tree.mesh.instanceColor.needsUpdate = true;
+      }
+      const active = Math.floor(fallCount * clamp3((age - 0.16) / 0.84, 0, 1));
+      fallMesh.count = active;
+      flowerGroup.scale.setScalar(0.9 + 0.32 * clamp3(age * 1.2, 0, 1));
+    }
     function setEra(p) {
       const f = clamp3(p, 0, 1) * (ERAS.length - 1);
       const i = Math.min(ERAS.length - 1, Math.floor(f));
@@ -46118,6 +46214,7 @@ void main() {
         finalSpot.intensity = 0;
         finalPoint.intensity = 0;
       }
+      updateFoliage(p);
       return color;
     }
     setEra(0);
@@ -46126,6 +46223,25 @@ void main() {
       sun.position.set(x - 19, 30, z + 17);
       sun.target.updateMatrixWorld();
       motes.update(time);
+      if (seasonAge > 0.12 && fallMesh.count > 0) {
+        for (let i = 0; i < fallMesh.count; i++) {
+          const d = fallData[i];
+          d.y -= dt * d.speed;
+          d.x += Math.sin(time * 0.8 + d.phase) * dt * 0.08;
+          d.z += Math.cos(time * 0.55 + d.phase) * dt * 0.06;
+          if (d.y < 0.05) {
+            d.y = 2.7 + Math.random() * 2;
+            d.x = -42 + Math.pow(Math.random(), 0.7) * 84;
+            d.z = -5 + Math.random() * 12;
+          }
+          fallQuat.setFromEuler(new Euler(time * 0.7 + d.spin, time * 0.5 + d.phase, time * 0.4));
+          fallScale.set(d.scale, d.scale, d.scale);
+          fallPos.set(d.x, d.y, d.z);
+          fallMatrix.compose(fallPos, fallQuat, fallScale);
+          fallMesh.setMatrixAt(i, fallMatrix);
+        }
+        fallMesh.instanceMatrix.needsUpdate = true;
+      }
       if (finalGroup.visible) {
         const near = clamp3(1 - Math.abs(x - 38) / 42, 0, 1);
         const pulse = 0.9 + 0.1 * Math.sin(time * 1.35);
@@ -46975,7 +47091,7 @@ void main() {
   function board(tex, w, h) {
     return new Mesh(new PlaneGeometry(w, h), new MeshBasicMaterial({ map: tex.texture, side: DoubleSide, transparent: true }));
   }
-  function createInteractions({ world: world2, player: player2, camera: camera2, canvas: canvas2, onComplete, onPlay, sfx: sfx2 }) {
+  function createInteractions({ world: world2, player: player2, camera: camera2, canvas: canvas2, onComplete, onPlay, sfx: sfx2, startStage = 0 }) {
     const kit = world2.kit;
     const stage = new Group();
     world2.stage.add(stage);
@@ -46994,6 +47110,18 @@ void main() {
     let nearestKind = null;
     let pointerDown = false;
     let busy = false;
+    const neighborGroup = new Group();
+    stage.add(neighborGroup);
+    let neighbours = [];
+    let neighborStage = -1;
+    function setNeighbours(stageNo) {
+      for (const child of [...neighborGroup.children]) neighborGroup.remove(child);
+      neighbours = makeNeighbours(stageNo, kit, neighborGroup);
+      neighborStage = stageNo;
+      nearest = null;
+      nearestKind = null;
+      hideDialogue();
+    }
     world2.zones.forEach((zone) => {
       const propGroup = new Group();
       propGroup.position.set(zone.x, GROUND_Y2, zone.z);
@@ -47053,7 +47181,7 @@ void main() {
       const elder = makeElder(ctx, zone);
       elders.push(elder);
     });
-    const neighbours = makeNeighbours(stage, kit);
+    setNeighbours(startStage);
     function nearestZone() {
       if (!player2) return null;
       const px2 = player2.root.position.x;
@@ -47236,14 +47364,65 @@ void main() {
         e.figure.pose(walkPose(e.departT, { speed: 6.2, amount: 0.62, arm: 0.52, knee: 0.55 }));
         if (Math.abs(e.group.position.x) > 46) e.group.visible = false;
       }
+      const nowT = performance.now() * 1e-3;
       for (const n of neighbours) {
         const d = Math.hypot(player2.root.position.x - n.root.position.x, player2.root.position.z - n.root.position.z);
+        if (n.dance) {
+          const s = Math.sin(nowT * 2.35 + n.phase);
+          const c = Math.cos(nowT * 2.35 + n.phase);
+          n.root.rotation.y = Math.atan2(24 - n.root.position.x, 0 - n.root.position.z);
+          n.figure.pose({
+            armLx: -0.52 + 0.24 * s,
+            armLz: 0.5 + 0.22 * c,
+            elbowL: -0.72,
+            armRx: -0.52 - 0.24 * s,
+            armRz: -0.5 - 0.22 * c,
+            elbowR: -0.72,
+            legLx: 0.1,
+            legRx: -0.1,
+            kneeL: 0.03,
+            kneeR: 0.03,
+            headX: 0.02,
+            headY: s * 0.075,
+            lean: 0.02
+          });
+          continue;
+        }
+        if (n.walker) {
+          n.root.position.x += n.dir * n.speed * dt;
+          if (n.root.position.x < -39) {
+            n.root.position.x = -39;
+            n.dir = 1;
+          }
+          if (n.root.position.x > 39) {
+            n.root.position.x = 39;
+            n.dir = -1;
+          }
+          n.root.rotation.y = n.dir > 0 ? Math.PI / 2 : -Math.PI / 2;
+          n.figure.pose(walkPose(nowT * 2.3 + n.phase, { speed: 5.4, amount: 0.42, arm: 0.28, knee: 0.34 }));
+          continue;
+        }
+        if (n.child && d > 2.4) {
+          n.wander += dt * 0.55;
+          const tx = n.baseX + Math.cos(n.wander + n.phase) * 0.7;
+          const tz = n.baseZ + Math.sin(n.wander * 0.8 + n.phase) * 0.4;
+          const dx = tx - n.root.position.x;
+          const dz = tz - n.root.position.z;
+          const dd = Math.hypot(dx, dz);
+          if (dd > 0.04) {
+            n.root.position.x += dx / dd * Math.min(dd, dt * 0.75);
+            n.root.position.z += dz / dd * Math.min(dd, dt * 0.45);
+            n.root.rotation.y = Math.atan2(dx, dz);
+          }
+          n.figure.pose(walkPose(nowT * 3.2 + n.phase, { speed: 5.8, amount: 0.5, arm: 0.34, knee: 0.4 }));
+          continue;
+        }
         if (d < 3.4) {
           n.figure.root.rotation.y = Math.atan2(player2.root.position.x - n.root.position.x, player2.root.position.z - n.root.position.z);
-          n.figure.pose({ ...n.figure.basePose, headX: 0.01, headY: Math.sin(performance.now() * 1e-3 + n.phase) * 0.05, armLx: -0.08, armRx: 0.02 });
+          n.figure.pose({ ...n.figure.basePose, headX: 0.01, headY: Math.sin(nowT + n.phase) * 0.05, armLx: -0.08, armRx: 0.02 });
         } else {
-          n.figure.pose({ ...n.figure.basePose, headY: Math.sin(performance.now() * 7e-4 + n.phase) * 0.06, headX: 0.02, armLx: -0.06 + Math.sin(performance.now() * 1e-3 + n.phase) * 0.02, armRx: 0.02 });
-          n.figure.root.rotation.y = n.yaw + Math.sin(performance.now() * 4e-4 + n.phase) * 0.12;
+          n.figure.pose({ ...n.figure.basePose, headY: Math.sin(nowT * 0.7 + n.phase) * 0.06, headX: 0.02, armLx: -0.06 + Math.sin(nowT + n.phase) * 0.02, armRx: 0.02 });
+          n.figure.root.rotation.y = n.yaw + Math.sin(nowT * 0.4 + n.phase) * 0.12;
         }
       }
       for (const e of elders) {
@@ -47269,7 +47448,10 @@ void main() {
       },
       hideDialogue,
       refreshDialogue,
-      depart
+      depart,
+      setStage: (stageNo) => {
+        if (stageNo !== neighborStage) setNeighbours(stageNo);
+      }
     };
   }
   function makeElder(ctx, zone) {
@@ -47917,44 +48099,235 @@ void main() {
     }
     return { update, onPointerDown, onPointerMove, onPointerUp };
   }
-  function makeNeighbours(stage, kit) {
-    const list = [
-      { x: -9.3, z: 2.5, scale: 0.9, shirt: "#8a7564", shirtShade: "#736252", pants: "#3f3b33", hair: "#4a4036", hairStyle: "bun", yaw: 0.7, phase: 1.2, name: "\u8D75\u5A76", role: "\u9694\u58C1\u90BB\u5C45", lines: [
-        "\u4ECA\u5E74\u7684\u5E03\u7968\u53C8\u4E0D\u591F\u4E86\u3002\u6211\u5BB6\u90A3\u53E3\u5B50\u8FD8\u60E6\u8BB0\u7740\u7684\u786E\u826F\u3002",
-        "\u4F9B\u9500\u793E\u6765\u4E86\u4E00\u6279\u642A\u74F7\u76C6\uFF0C\u53BB\u665A\u4E86\u53EF\u5C31\u6CA1\u4E86\u3002",
-        "\u4F60\u5988\u558A\u4F60\u56DE\u5BB6\u5403\u996D\u5462\uFF0C\u522B\u5728\u8857\u4E0A\u91CE\u3002"
-      ] },
-      { x: -1.9, z: 2.2, scale: 0.6, shirt: "#b65a3d", shirtShade: "#9a4a32", pants: "#3f4b56", hair: "#2d251e", yaw: -1.1, phase: 3, child: true, name: "\u5C0F\u519B", role: "\u8857\u574A\u5C0F\u5B69", lines: [
-        "\u6211\u7238\u4ECE\u4E0A\u6D77\u5E26\u56DE\u6765\u4E00\u5757\u7535\u5B50\u8868\uFF0C\u4F1A\u4EAE\u7EA2\u5B57\uFF01",
-        "\u665A\u4E0A\u6652\u573A\u653E\u300A\u5730\u9053\u6218\u300B\uFF0C\u4F60\u5E26\u5C0F\u677F\u51F3\u6CA1\u6709\uFF1F",
-        "\u6211\u62FF\u4E24\u5F20\u7CAE\u7968\uFF0C\u6362\u4F60\u4E00\u9897\u73BB\u7483\u5F39\u73E0\u3002"
-      ] },
-      { x: 15.7, z: -2, scale: 0.94, shirt: "#5e6b59", shirtShade: "#4c5849", pants: "#3b3d38", hair: "#3d352a", yaw: 1.8, phase: 4.4, hat: true, name: "\u8001\u9A6C", role: "\u4FEE\u8F66\u5E08\u5085", lines: [
-        "\u6C38\u4E45\u724C\u4E8C\u516B\u5927\u6760\uFF0C\u9A6E\u4E24\u888B\u9762\u90FD\u4E0D\u6643\u3002",
-        "\u8F66\u94FE\u5B50\u6389\u4E86\uFF1F\u63A8\u8FC7\u6765\uFF0C\u6211\u7ED9\u4F60\u4E0A\u70B9\u6CB9\u3002",
-        "\u73B0\u5728\u65F6\u5174\u7684\u786E\u826F\uFF0C\u9A91\u8F66\u53BB\u76F8\u4EB2\u53EF\u7CBE\u795E\u3002"
-      ] },
-      { x: 27.6, z: 2.3, scale: 0.88, shirt: "#7c6b79", shirtShade: "#675863", pants: "#3c3a39", hair: "#9b9284", hairStyle: "bun", yaw: -0.8, phase: 5.4, name: "\u5218\u59E8", role: "\u8857\u9053\u90BB\u5C45", lines: [
-        "\u90AE\u9012\u5458\u521A\u8D70\uFF0C\u4F60\u5BB6\u6709\u4E00\u5C01\u4E0A\u6D77\u6765\u4FE1\u3002",
-        "\u300A\u5927\u4F17\u7535\u5F71\u300B\u5230\u4E86\uFF0C\u5C01\u9762\u662F\u5218\u6653\u5E86\u3002",
-        "\u665A\u4E0A\u6765\u6211\u5BB6\u542C\u9093\u4E3D\u541B\uFF1F\u78C1\u5E26\u521A\u7FFB\u5F55\u7684\u3002"
-      ] },
-      { x: -36.8, z: -0.7, scale: 0.55, shirt: "#d4b05b", shirtShade: "#b8974a", pants: "#3f4c48", hair: "#2e251d", yaw: 0.4, phase: 2.1, child: true, name: "\u5C0F\u6EE1\u7684\u8DDF\u5C41\u866B", role: "\u5DF7\u53E3\u5C0F\u5B69", lines: [
-        "\u4F60\u5BB6\u7684\u6536\u97F3\u673A\u4FEE\u597D\u4E86\u5417\uFF1F\u6211\u60F3\u542C\u300A\u5CB3\u98DE\u4F20\u300B\u3002",
-        "\u660E\u5929\u53BB\u6CB3\u91CC\u6478\u9C7C\uFF0C\u522B\u544A\u8BC9\u4F60\u5988\u3002",
-        "\u6211\u6512\u4E86\u4E94\u5F20\u7CD6\u7EB8\uFF0C\u5C31\u5DEE\u4E00\u5F20\u5927\u767D\u5154\u3002"
-      ] },
-      { x: -19.5, z: 2.1, scale: 0.93, shirt: "#4d6b55", shirtShade: "#3f5947", pants: "#3b4038", hair: "#3b3328", yaw: 1.1, phase: 3.8, bag: true, name: "\u8001\u90AE", role: "\u90AE\u9012\u5458", lines: [
-        "\u4ECA\u5929\u6709\u300A\u4EBA\u6C11\u65E5\u62A5\u300B\uFF0C\u8FD8\u6709\u4E00\u5F20\u516B\u5206\u90AE\u7968\u3002",
-        "\u6302\u53F7\u4FE1\u8981\u76D6\u7AE0\uFF0C\u4F60\u5BB6\u6709\u5370\u7AE0\u6CA1\u6709\uFF1F",
-        "\u8FD9\u5C01\u4FE1\u4ECE\u65B0\u7586\u6765\uFF0C\u8D70\u4E86\u534A\u4E2A\u6708\u3002"
-      ] },
-      { x: 21.6, z: 2.4, scale: 0.9, shirt: "#6e5b48", shirtShade: "#5a4938", pants: "#3e3a32", hair: "#4a4036", yaw: -0.4, phase: 1.8, toolbox: true, name: "\u4FEE\u978B\u9648", role: "\u4FEE\u978B\u5320", lines: [
-        "\u978B\u5E95\u53C8\u78E8\u7A7F\u4E86\uFF1F\u6401\u8FD9\u513F\uFF0C\u4E0B\u5348\u6765\u53D6\u3002",
-        "\u7CAE\u7968\u6536\u597D\uFF0C\u522B\u62FF\u5E03\u7968\u5F53\u7CAE\u7968\u4F7F\u3002",
-        "\u8FD9\u53CC\u767D\u7403\u978B\uFF0C\u4F60\u5988\u62FF\u5E03\u7968\u6362\u7684\u5427\uFF1F"
-      ] }
-    ];
+  function makeNeighbours(stageNo, kit, parent) {
+    const list = [];
+    if (stageNo <= 2) {
+      const kids = [
+        ["\u5C0F\u519B", -36.2, -1, 0.58, "#b65a3d", "#3f4b56", "#2d251e", 2.9, ["\u6211\u7238\u4ECE\u4E0A\u6D77\u5E26\u56DE\u6765\u4E00\u5757\u7535\u5B50\u8868\uFF0C\u4F1A\u4EAE\u7EA2\u5B57\uFF01", "\u665A\u4E0A\u6652\u573A\u653E\u300A\u5730\u9053\u6218\u300B\uFF0C\u4F60\u5E26\u5C0F\u677F\u51F3\u6CA1\u6709\uFF1F", "\u6211\u62FF\u4E24\u5F20\u7CAE\u7968\uFF0C\u6362\u4F60\u4E00\u9897\u73BB\u7483\u5F39\u73E0\u3002"]],
+        ["\u8DDF\u5C41\u866B", -33.4, 2.7, 0.54, "#d4b05b", "#3f4c48", "#2e251d", 1.6, ["\u4F60\u5BB6\u7684\u6536\u97F3\u673A\u4FEE\u597D\u4E86\u5417\uFF1F\u6211\u60F3\u542C\u300A\u5CB3\u98DE\u4F20\u300B\u3002", "\u660E\u5929\u53BB\u6CB3\u91CC\u6478\u9C7C\uFF0C\u522B\u544A\u8BC9\u4F60\u5988\u3002", "\u6211\u6512\u4E86\u4E94\u5F20\u7CD6\u7EB8\uFF0C\u5C31\u5DEE\u4E00\u5F20\u5927\u767D\u5154\u3002"]],
+        ["\u94C1\u86CB", -28, -2.1, 0.6, "#6f8f65", "#3d4650", "#30271f", 4.1, ["\u94C1\u73AF\u8981\u987A\u7740\u98CE\u8DD1\uFF0C\u4F60\u8FFD\u4E0D\u4E0A\u6211\u3002", "\u6211\u7528\u5F39\u5F13\u6253\u4E0B\u4E00\u7247\u69D0\u6811\u53F6\u3002", "\u51B0\u68CD\u4E09\u5206\u94B1\uFF0C\u4F60\u8BF7\u4E0D\u8BF7\uFF1F"]],
+        ["\u5C0F\u6885", -22, 2.4, 0.55, "#d98a91", "#4e4550", "#362a22", 1.2, ["\u8DF3\u76AE\u7B4B\uFF0C\u9A6C\u5170\u5F00\u82B1\u4E8C\u5341\u4E00\u3002", "\u8FD9\u5F20\u7CD6\u7EB8\u7ED9\u4F60\uFF0C\u522B\u5F04\u76B1\u4E86\u3002", "\u5C0F\u4EBA\u4E66\u644A\u4ECA\u5929\u6765\u4E86\u65B0\u7684\u300A\u4E09\u56FD\u300B\u3002"]],
+        ["\u4E09\u5A03", -15.6, -1.9, 0.57, "#5f7d92", "#3e4852", "#2d241d", 3.6, ["\u8FC7\u5E74\u5269\u7684\u97AD\u70AE\uFF0C\u4F60\u6562\u4E0D\u6562\u653E\uFF1F", "\u9640\u87BA\u662F\u6211\u7238\u7528\u8F66\u5E8A\u8F66\u7684\u3002", "\u9732\u5929\u7535\u5F71\u4ECA\u665A\u653E\u6253\u4ED7\u7684\u3002"]],
+        ["\u4E8C\u4E2B", -9, 2.2, 0.53, "#c9a55e", "#465047", "#33281f", 2.2, ["\u6C99\u5305\u4E22\u8FC7\u6765\uFF0C\u63A5\u4F4F\u3002", "\u6211\u59D0\u7ED9\u6211\u7F1D\u4E86\u4E2A\u5E03\u5A03\u5A03\u3002", "\u4F60\u4F1A\u5531\u300A\u8BA9\u6211\u4EEC\u8361\u8D77\u53CC\u6868\u300B\u5417\uFF1F"]],
+        ["\u6BDB\u5934", -2.6, -2, 0.59, "#6f8a57", "#3e4650", "#2e251e", 4.6, ["\u7535\u5B50\u8868\u4E00\u6309\u5C31\u4EAE\uFF0C\u7EA2\u7684\u3002", "\u4E52\u4E53\u7403\u53F0\u8BA9\u5927\u4EBA\u5360\u4E86\u3002", "\u4F60\u770B\u89C1\u6211\u90A3\u53EA\u94C1\u73AF\u6CA1\u6709\uFF1F"]],
+        ["\u5C0F\u82B3", 4.8, 2.3, 0.56, "#a582a0", "#4a4550", "#34291f", 1.9, ["\u76AE\u7B4B\u518D\u5347\u9AD8\u4E00\u70B9\u3002", "\u5927\u767D\u5154\u5976\u7CD6\uFF0C\u4E00\u4EBA\u4E00\u534A\u3002", "\u6211\u957F\u5927\u8981\u53BB\u4E0A\u6D77\u770B\u770B\u3002"]],
+        ["\u77F3\u5934", 11.6, -1.9, 0.6, "#946b4c", "#3d454c", "#2f261e", 3.9, ["\u5F39\u73E0\u8FDB\u6D1E\u4E86\uFF0C\u5F52\u6211\u3002", "\u94C1\u73AF\u6EDA\u8FC7\u6574\u6761\u8857\u3002", "\u4F60\u7238\u7ED9\u4F60\u505A\u6728\u67AA\u4E86\u5417\uFF1F"]],
+        ["\u5C0F\u52C7", 18.3, 2.2, 0.58, "#5e7a72", "#414a4e", "#2d241d", 1.4, ["\u4ECA\u665A\u7535\u5F71\u6709\u9B3C\u5B50\u3002", "\u6211\u62FF\u6728\u67AA\u6362\u4F60\u7684\u5F39\u5F13\u3002", "\u4F60\u6562\u4E0D\u6562\u722C\u5230\u90A3\u68F5\u69D0\u6811\u4E0A\uFF1F"]],
+        ["\u4E2B\u4E2B", 25, -2.2, 0.52, "#c26f50", "#4a444c", "#33281f", 3.2, ["\u7CD6\u753B\u6211\u8981\u5154\u5B50\u7684\u3002", "\u6C99\u5305\u6389\u623F\u9876\u4E0A\u4E86\u3002", "\u4F60\u770B\u89C1\u6211\u59D0\u6CA1\u6709\uFF1F"]]
+      ];
+      for (const [name, x, z, scale, shirt, pants, hair, phase, lines] of kids) {
+        list.push({
+          name,
+          role: "\u8857\u574A\u5C0F\u5B69",
+          x,
+          z,
+          scale,
+          shirt,
+          shirtShade: "#7d6854",
+          pants,
+          hair,
+          phase,
+          lines,
+          child: true,
+          wander: phase
+        });
+      }
+      list.push({
+        name: "\u8D75\u5A76",
+        role: "\u9694\u58C1\u90BB\u5C45",
+        x: -9.3,
+        z: 2.5,
+        scale: 0.9,
+        shirt: "#8a7564",
+        shirtShade: "#736252",
+        pants: "#3f3b33",
+        hair: "#4a4036",
+        hairStyle: "bun",
+        phase: 1.2,
+        lines: ["\u4ECA\u5E74\u7684\u5E03\u7968\u53C8\u4E0D\u591F\u4E86\u3002\u6211\u5BB6\u90A3\u53E3\u5B50\u8FD8\u60E6\u8BB0\u7740\u7684\u786E\u826F\u3002", "\u4F9B\u9500\u793E\u6765\u4E86\u4E00\u6279\u642A\u74F7\u76C6\uFF0C\u53BB\u665A\u4E86\u53EF\u5C31\u6CA1\u4E86\u3002", "\u4F60\u5988\u558A\u4F60\u56DE\u5BB6\u5403\u996D\u5462\uFF0C\u522B\u5728\u8857\u4E0A\u91CE\u3002"],
+        basket: true
+      });
+      list.push({
+        name: "\u8001\u90AE",
+        role: "\u90AE\u9012\u5458",
+        x: -19.5,
+        z: 2.1,
+        scale: 0.93,
+        shirt: "#4d6b55",
+        shirtShade: "#3f5947",
+        pants: "#3b4038",
+        hair: "#3b3328",
+        phase: 3.8,
+        lines: ["\u4ECA\u5929\u6709\u300A\u4EBA\u6C11\u65E5\u62A5\u300B\uFF0C\u8FD8\u6709\u4E00\u5F20\u516B\u5206\u90AE\u7968\u3002", "\u6302\u53F7\u4FE1\u8981\u76D6\u7AE0\uFF0C\u4F60\u5BB6\u6709\u5370\u7AE0\u6CA1\u6709\uFF1F", "\u8FD9\u5C01\u4FE1\u4ECE\u65B0\u7586\u6765\uFF0C\u8D70\u4E86\u534A\u4E2A\u6708\u3002"],
+        bag: true
+      });
+    } else if (stageNo <= 5) {
+      const workers = [
+        ["\u5927\u5218", -30.2, -1.8, 1, 0.97, "#556b78", "#3b4147", ["\u5382\u91CC\u4ECA\u5929\u52A0\u73ED\uFF0C\u98DF\u5802\u7684\u83DC\u90FD\u51C9\u4E86\u3002", "\u6C38\u4E45\u4E8C\u516B\u5927\u6760\uFF0C\u9A91\u8D77\u6765\u5C31\u662F\u7A33\u3002", "\u542C\u8BF4\u5355\u4F4D\u8981\u5206\u623F\u4E86\uFF0C\u4F60\u6392\u4E0A\u53F7\u6CA1\u6709\uFF1F"], 0.55],
+        ["\u5C0F\u5468", -13.5, 1.9, -1, 0.94, "#8a7564", "#3b3b3a", ["\u4E0A\u6D77\u724C\u624B\u8868\uFF0C\u6512\u4E86\u4E24\u5E74\u5DE5\u8D44\u3002", "\u7684\u786E\u826F\u886C\u886B\uFF0C\u6D17\u4E86\u4E0D\u7528\u71A8\u3002", "\u665A\u4E0A\u6587\u5316\u5BAB\u653E\u7535\u5F71\uFF0C\u53BB\u4E0D\u53BB\uFF1F"], 0.46],
+        ["\u738B\u4F1A\u8BA1", 5.5, -1.8, 1, 0.95, "#6d6355", "#3a3a37", ["\u8FD9\u4E2A\u6708\u5DE5\u8D44\u53D1\u4E86\uFF0C\u5148\u5B58\u4E00\u534A\u3002", "\u7CAE\u7968\u53C8\u6DA8\u4E86\uFF1F\u65E5\u5B50\u5F97\u7B97\u7740\u8FC7\u3002", "\u6211\u5BB6\u5B69\u5B50\u660E\u5E74\u4E0A\u5C0F\u5B66\u3002"], 0.52],
+        ["\u674E\u6280\u672F\u5458", 22, 1.9, -1, 0.96, "#4f6273", "#393e42", ["\u56FE\u7EB8\u6539\u4E86\u4E09\u904D\uFF0C\u8F66\u95F4\u8FD8\u5728\u7B49\u3002", "\u591C\u6821\u62A5\u4E86\u673A\u68B0\u5236\u56FE\uFF0C\u4F60\u8981\u4E0D\u8981\u4E00\u8D77\uFF1F", "\u9694\u58C1\u5382\u4E70\u4E86\u53F0\u5F69\u7535\uFF0C\u7A00\u7F55\u3002"], 0.5]
+      ];
+      for (const [name, x, z, dir, scale, shirt, pants, lines, speed] of workers) {
+        list.push({
+          name,
+          role: "\u4E0A\u73ED\u65CF",
+          x,
+          z,
+          scale,
+          shirt,
+          shirtShade: "#5f5344",
+          pants,
+          hair: "#3b3026",
+          phase: Math.random() * 4,
+          lines,
+          walker: true,
+          dir,
+          speed
+        });
+      }
+      list.push({
+        name: "\u8D75\u5A76",
+        role: "\u9694\u58C1\u90BB\u5C45",
+        x: -9.3,
+        z: 2.5,
+        scale: 0.9,
+        shirt: "#7c6b72",
+        shirtShade: "#665860",
+        pants: "#3b393a",
+        hair: "#5f4f42",
+        hairStyle: "bun",
+        phase: 1.2,
+        lines: ["\u5B69\u5B50\u5927\u4E86\uFF0C\u9662\u5B50\u91CC\u4E00\u4E0B\u5C31\u7A7A\u4E86\u3002", "\u4F9B\u9500\u793E\u7684\u642A\u74F7\u76C6\uFF0C\u73B0\u5728\u6CA1\u4EBA\u62A2\u4E86\u3002", "\u4F60\u5988\u8BA9\u6211\u95EE\u4F60\uFF0C\u4EC0\u4E48\u65F6\u5019\u56DE\u5BB6\u5403\u996D\u3002"],
+        basket: true
+      });
+      list.push({
+        name: "\u8001\u9A6C",
+        role: "\u4FEE\u8F66\u5E08\u5085",
+        x: 15.7,
+        z: -2,
+        scale: 0.94,
+        shirt: "#5e6b59",
+        shirtShade: "#4c5849",
+        pants: "#3b3d38",
+        hair: "#3d352a",
+        hat: true,
+        phase: 4.4,
+        lines: ["\u6C38\u4E45\u724C\u4E8C\u516B\u5927\u6760\uFF0C\u9A6E\u4E24\u888B\u9762\u90FD\u4E0D\u6643\u3002", "\u8F66\u94FE\u5B50\u6389\u4E86\uFF1F\u63A8\u8FC7\u6765\uFF0C\u6211\u7ED9\u4F60\u4E0A\u70B9\u6CB9\u3002", "\u73B0\u5728\u65F6\u5174\u7684\u786E\u826F\uFF0C\u9A91\u8F66\u53BB\u76F8\u4EB2\u53EF\u7CBE\u795E\u3002"]
+      });
+      list.push({
+        name: "\u5218\u59E8",
+        role: "\u8857\u9053\u90BB\u5C45",
+        x: 27.6,
+        z: 2.3,
+        scale: 0.88,
+        shirt: "#7c6b79",
+        shirtShade: "#675863",
+        pants: "#3c3a39",
+        hair: "#8a7b68",
+        hairStyle: "bun",
+        glasses: true,
+        phase: 5.4,
+        lines: ["\u90AE\u9012\u5458\u521A\u8D70\uFF0C\u4F60\u5BB6\u6709\u4E00\u5C01\u4E0A\u6D77\u6765\u4FE1\u3002", "\u300A\u5927\u4F17\u7535\u5F71\u300B\u5230\u4E86\uFF0C\u5C01\u9762\u662F\u5218\u6653\u5E86\u3002", "\u665A\u4E0A\u6765\u6211\u5BB6\u542C\u9093\u4E3D\u541B\uFF1F\u78C1\u5E26\u521A\u7FFB\u5F55\u7684\u3002"]
+      });
+      list.push({
+        name: "\u4FEE\u978B\u9648",
+        role: "\u4FEE\u978B\u5320",
+        x: 21.6,
+        z: 2.4,
+        scale: 0.9,
+        shirt: "#6e5b48",
+        shirtShade: "#5a4938",
+        pants: "#3e3a32",
+        hair: "#4a4036",
+        phase: 1.8,
+        lines: ["\u978B\u5E95\u53C8\u78E8\u7A7F\u4E86\uFF1F\u6401\u8FD9\u513F\uFF0C\u4E0B\u5348\u6765\u53D6\u3002", "\u7CAE\u7968\u6536\u597D\uFF0C\u522B\u62FF\u5E03\u7968\u5F53\u7CAE\u7968\u4F7F\u3002", "\u8FD9\u53CC\u767D\u7403\u978B\uFF0C\u4F60\u5988\u62FF\u5E03\u7968\u6362\u7684\u5427\uFF1F"],
+        toolbox: true
+      });
+      list.push({
+        name: "\u5C0F\u519B",
+        role: "\u8857\u574A\u5C0F\u5B69",
+        x: -36.2,
+        z: -1,
+        scale: 0.74,
+        shirt: "#b65a3d",
+        shirtShade: "#9a4a32",
+        pants: "#3f4b56",
+        hair: "#2d251e",
+        phase: 2.9,
+        lines: ["\u6211\u90FD\u4E0A\u4E2D\u5B66\u4E86\uFF0C\u7535\u5B50\u8868\u65E9\u5C31\u4E0D\u7A00\u5947\u3002", "\u4F60\u8FD8\u5728\u770B\u5C0F\u4EBA\u4E66\uFF1F", "\u4EE5\u540E\u6211\u8981\u53BB\u6DF1\u5733\u3002"],
+        child: true,
+        wander: 2.9
+      });
+      list.push({
+        name: "\u8DDF\u5C41\u866B",
+        role: "\u5DF7\u53E3\u5C0F\u5B69",
+        x: -33.4,
+        z: 2.7,
+        scale: 0.67,
+        shirt: "#d4b05b",
+        shirtShade: "#b8974a",
+        pants: "#3f4c48",
+        hair: "#2e251d",
+        phase: 1.6,
+        lines: ["\u4F60\u600E\u4E48\u8001\u5728\u8857\u4E0A\u8F6C\uFF1F", "\u6211\u5988\u8BF4\u4F60\u518D\u4E0D\u56DE\u5BB6\uFF0C\u996D\u5C31\u51C9\u4E86\u3002", "\u7B49\u6211\u957F\u5927\uFF0C\u4E5F\u8981\u53BB\u5F88\u8FDC\u7684\u5730\u65B9\u3002"],
+        child: true,
+        wander: 1.6
+      });
+    } else if (stageNo <= 8) {
+      const old = [
+        ["\u8D75\u5A76", -9.3, 2.5, 0.86, "#7b6a70", "#6a5a60", "#3a393a", "#d1c5b3", true, ["\u4EBA\u8001\u4E86\uFF0C\u8D70\u4E24\u6B65\u5C31\u5598\u3002", "\u9662\u5B50\u91CC\u5B89\u9759\u5F97\u5F88\uFF0C\u8FDE\u6536\u97F3\u673A\u90FD\u61D2\u5F97\u5F00\u3002", "\u4F60\u5988\u8981\u662F\u5728\uFF0C\u51C6\u53C8\u558A\u4F60\u56DE\u5BB6\u5403\u996D\u3002"], true],
+        ["\u8001\u9A6C", 15.7, -2, 0.85, "#5b6656", "#4a5446", "#383b36", "#d8d0c0", true, ["\u4FEE\u8F66\u644A\u6536\u4E86\uFF0C\u73B0\u5728\u6CA1\u4EBA\u9A91\u4E8C\u516B\u5927\u6760\u4E86\u3002", "\u8FD9\u8857\u4E0A\u7684\u6811\uFF0C\u600E\u4E48\u4E00\u5E74\u6BD4\u4E00\u5E74\u9EC4\u3002", "\u4F60\u6162\u70B9\u8D70\uFF0C\u819D\u76D6\u4E0D\u884C\u4E86\u3002"], false],
+        ["\u5218\u59E8", 27.6, 2.3, 0.84, "#756973", "#62585f", "#3a3737", "#e2d9c8", true, ["\u300A\u5927\u4F17\u7535\u5F71\u300B\u65E9\u505C\u520A\u4E86\u3002", "\u9093\u4E3D\u541B\u7684\u6B4C\uFF0C\u73B0\u5728\u5E74\u8F7B\u4EBA\u4E5F\u542C\u3002", "\u665A\u4E0A\u5E7F\u573A\u821E\uFF0C\u4F60\u53BB\u4E0D\u53BB\uFF1F"], true],
+        ["\u8001\u90AE", -19.5, 2.1, 0.84, "#465e4c", "#3a4e40", "#383a32", "#cfc5b2", true, ["\u4FE1\u8D8A\u6765\u8D8A\u5C11\uFF0C\u90AE\u5C40\u4E5F\u642C\u8D70\u4E86\u3002", "\u73B0\u5728\u90FD\u6253\u7535\u8BDD\uFF0C\u8C01\u8FD8\u5199\u4FE1\u3002", "\u8FD9\u5F20\u516B\u5206\u90AE\u7968\uFF0C\u7559\u4E2A\u5FF5\u60F3\u3002"], false],
+        ["\u4FEE\u978B\u9648", 21.6, 2.4, 0.83, "#675545", "#554536", "#3b372f", "#d8d0bd", true, ["\u978B\u5E95\u78E8\u7A7F\u4E86\uFF0C\u4E5F\u6CA1\u4EBA\u8865\u4E86\u3002", "\u8FD9\u6761\u8857\uFF0C\u4FEE\u978B\u7684\u53EA\u5269\u6211\u4E00\u4E2A\u3002", "\u4F60\u5750\u7740\uFF0C\u6211\u7ED9\u4F60\u628A\u978B\u8DDF\u9489\u7262\u3002"], false]
+      ];
+      for (const [name, x, z, scale, shirt, shirtShade, pants, hair, glasses, lines, basket] of old) {
+        list.push({
+          name,
+          role: "\u8001\u8857\u574A",
+          x,
+          z,
+          scale,
+          shirt,
+          shirtShade,
+          pants,
+          hair,
+          hairStyle: name === "\u8001\u9A6C" ? "short" : "bun",
+          glasses,
+          phase: Math.random() * 4,
+          lines,
+          basket,
+          cane: name === "\u8001\u9A6C"
+        });
+      }
+      const dancers = [
+        ["\u5B59\u59E8", 18, -1.2, "#c05a4a", "#8a4a3d", "#e0d5c2", 1.2, ["\u665A\u4E0A\u4E03\u70B9\uFF0C\u5F55\u97F3\u673A\u4E00\u54CD\uFF0C\u6574\u6761\u8857\u90FD\u6D3B\u4E86\u3002", "\u6211\u8FD9\u628A\u6247\u5B50\uFF0C\u8DDF\u4E86\u6211\u5341\u51E0\u5E74\u3002", "\u4F60\u5C0F\u65F6\u5019\u8FD8\u8DDF\u7740\u6211\u4EEC\u626D\u8FC7\u3002"]],
+        ["\u9A6C\u5A76", 21.2, 1, "#5f8a76", "#4b6c5b", "#d6ccb8", 2.4, ["\u5E7F\u573A\u821E\u597D\u554A\uFF0C\u817F\u811A\u90FD\u677E\u5FEB\u3002", "\u8001\u59D0\u59B9\u4E00\u4E2A\u4E2A\u8D70\u4E86\uFF0C\u821E\u8FD8\u5F97\u8DF3\u3002", "\u97F3\u4E50\u4E00\u505C\uFF0C\u8857\u5C31\u9759\u4E86\u3002"]],
+        ["\u8001\u4F55", 24.2, -1.3, "#6c7e9a", "#53657c", "#c7b9a3", 3.6, ["\u6211\u5E74\u8F7B\u65F6\u5019\u5728\u5BA3\u4F20\u961F\u3002", "\u73B0\u5728\u8DF3\u4E0D\u52A8\u4E86\uFF0C\u53EA\u80FD\u7AD9\u540E\u6392\u3002", "\u4F60\u770B\u90A3\u68F5\u69D0\u6811\uFF0C\u53F6\u5B50\u53C8\u843D\u4E86\u3002"]],
+        ["\u5468\u59E8", 27.2, 1, "#b07a4e", "#8b5d39", "#ded2bd", 4.8, ["\u6211\u5B59\u5973\u90FD\u4F1A\u8DF3\u4E86\u3002", "\u8FD9\u5F55\u97F3\u673A\u662F\u513F\u5B50\u4ECE\u5E7F\u5DDE\u5E26\u56DE\u6765\u7684\u3002", "\u518D\u8DF3\u4E00\u66F2\uFF0C\u5C31\u56DE\u5BB6\u3002"]],
+        ["\u738B\u53D4", 30.2, -1.1, "#7d6f5c", "#625846", "#cfc4ae", 5.7, ["\u6211\u5C31\u5728\u65C1\u8FB9\u770B\uFF0C\u4E0D\u8DF3\u3002", "\u5F53\u5E74\u8FD9\u6761\u8857\u591A\u70ED\u95F9\u3002", "\u73B0\u5728\u53EA\u5269\u4E0B\u6211\u4EEC\u8FD9\u4E9B\u8001\u9AA8\u5934\u3002"]],
+        ["\u674E\u5A76", 33, 0.9, "#9a6a78", "#7b5260", "#e5d9c8", 6.4, ["\u6247\u5B50\u62FF\u53CD\u4E86\uFF0C\u91CD\u6765\u3002", "\u660E\u5929\u8FD8\u6765\u554A\u3002", "\u8857\u5C3E\u90A3\u76CF\u706F\uFF0C\u600E\u4E48\u53C8\u4EAE\u4E86\u3002"]]
+      ];
+      for (const [name, x, z, shirt, shirtShade, hair, phase, lines] of dancers) {
+        list.push({
+          name,
+          role: "\u5E7F\u573A\u821E",
+          x,
+          z,
+          scale: 0.85,
+          shirt,
+          shirtShade,
+          pants: "#3a3b38",
+          hair,
+          hairStyle: name === "\u8001\u4F55" ? "short" : "bun",
+          glasses: name === "\u738B\u53D4",
+          phase,
+          lines,
+          dance: true
+        });
+      }
+    }
     const out = [];
     for (const n of list) {
       const figure = createPerson(kit, {
@@ -47965,37 +48338,71 @@ void main() {
         hair: n.hair,
         hairStyle: n.hairStyle || "short",
         hat: n.hat,
-        glasses: false,
+        glasses: !!n.glasses,
+        scarf: n.scarf,
         detail: true
       });
       const root = new Group();
       root.position.set(n.x, GROUND_Y2, n.z);
-      root.rotation.y = n.yaw;
+      root.rotation.y = n.yaw || 0;
       root.add(figure.group);
-      stage.add(root);
-      if (n.name === "\u8D75\u5A76") {
+      parent.add(root);
+      if (n.basket) {
         kit.box(root, 0.34, 0.24, 0.26, "#9a7444", 0.33, 0.58, 0.12);
         kit.cyl(root, 0.06, 0.06, 0.32, 8, "#7d5a34", 0.33, 0.72, 0.12);
       }
-      if (n.bag) {
-        kit.box(root, 0.36, 0.3, 0.18, "#3f5b43", 0.3, 0.7, -0.05);
-        kit.box(root, 0.05, 0.5, 0.05, "#2f4633", 0.3, 0.95, -0.05);
+      if (n.bag) kit.box(root, 0.36, 0.3, 0.18, "#3f5b43", 0.3, 0.7, -0.05);
+      if (n.briefcase || n.walker) {
+        kit.box(root, 0.3, 0.22, 0.12, "#4b3a2b", 0.33, 0.66, 0.02);
+        kit.box(root, 0.12, 0.04, 0.04, "#2f261e", 0.33, 0.79, 0.02);
       }
       if (n.toolbox) {
         kit.box(root, 0.4, 0.16, 0.26, "#5b432d", -0.35, 0.16, 0.15);
         kit.box(root, 0.3, 0.08, 0.2, "#765a3d", -0.35, 0.3, 0.15);
       }
+      if (n.cane) kit.cyl(root, 0.02, 0.025, 0.9, 6, "#5a402c", 0.4, 0.45, 0.04);
+      if (n.child) {
+        kit.ico(root, 0.11, 0, ["#b84a32", "#5f8a76", "#d4b05b"][out.length % 3], 0.3, 0.18, 0.14, { castShadow: false });
+      }
       figure.pose({ ...figure.basePose, headX: 0.02, headY: 0, armLx: -0.06, armRx: 0.02 });
-      out.push({ figure, root, yaw: n.yaw, phase: n.phase, name: n.name, role: n.role, lines: n.lines, lineIndex: 0 });
+      out.push({
+        figure,
+        root,
+        yaw: n.yaw || 0,
+        phase: n.phase,
+        name: n.name,
+        role: n.role,
+        lines: n.lines,
+        lineIndex: 0,
+        dance: !!n.dance,
+        walker: !!n.walker,
+        dir: n.dir || 1,
+        speed: n.speed || 0.5,
+        child: !!n.child,
+        baseX: n.x,
+        baseZ: n.z,
+        wander: n.wander || n.phase || 0
+      });
     }
-    const cat = new Group();
-    cat.position.set(-39.1, GROUND_Y2, -0.2);
-    kit.box(cat, 0.28, 0.2, 0.5, "#9a7a54", 0, 0.16, 0);
-    kit.ico(cat, 0.16, 0, "#9a7a54", 0, 0.33, 0.2);
-    kit.box(cat, 0.035, 0.18, 0.035, "#7d6040", 0, 0.43, 0.2);
-    kit.box(cat, 0.05, 0.08, 0.03, "#3b3026", 0, 0.35, 0.33, { castShadow: false });
-    kit.box(cat, 0.04, 0.04, 0.42, "#7d6040", 0, 0.28, -0.28, { rotation: [0.35, 0, 0] });
-    stage.add(cat);
+    if (stageNo < 9) {
+      const cat = new Group();
+      cat.position.set(-39.1, GROUND_Y2, -0.2);
+      kit.box(cat, 0.28, 0.2, 0.5, "#9a7a54", 0, 0.16, 0);
+      kit.ico(cat, 0.16, 0, "#9a7a54", 0, 0.33, 0.2);
+      kit.box(cat, 0.035, 0.18, 0.035, "#7d6040", 0, 0.43, 0.2);
+      kit.box(cat, 0.05, 0.08, 0.03, "#3b3026", 0, 0.35, 0.33, { castShadow: false });
+      kit.box(cat, 0.04, 0.04, 0.42, "#7d6040", 0, 0.28, -0.28, { rotation: [0.35, 0, 0] });
+      parent.add(cat);
+    }
+    if (stageNo >= 6 && stageNo <= 8) {
+      const player2 = new Group();
+      player2.position.set(24.3, GROUND_Y2, -2.6);
+      kit.box(player2, 0.5, 0.3, 0.24, "#3c3934", 0, 0.18, 0);
+      kit.cyl(player2, 0.2, 0.2, 0.03, 12, "#68604f", 0, 0.35, 0.02);
+      kit.box(player2, 0.32, 0.06, 0.1, "#262421", 0, 0.4, 0.02);
+      kit.box(player2, 0.05, 0.4, 0.05, "#2f2c28", 0, 0.58, 0);
+      parent.add(player2);
+    }
     return out;
   }
   function sugarPath(w, h) {
@@ -52484,6 +52891,9 @@ void main() {
   var reincarnation = $("#reincarnation");
   var reliveYes = $("#reliveYes");
   var reliveEnough = $("#reliveEnough");
+  var cyclePrompt = $("#cyclePrompt");
+  var cycleYes = $("#cycleYes");
+  var cycleStay = $("#cycleStay");
   var fade = $("#fade");
   var state = {
     ready: false,
@@ -52494,6 +52904,7 @@ void main() {
     ended: false,
     inMemory: false,
     endPrompt: false,
+    cyclePrompt: false,
     hintEnd: false
   };
   var renderer;
@@ -52515,6 +52926,7 @@ void main() {
   var desiredTarget = new Vector3();
   var cameraOffset = new Vector3(24, 28, 24);
   var reincarnateOnLoad = false;
+  var cycleDismissed = false;
   try {
     reincarnateOnLoad = sessionStorage.getItem("tm-reincarnate") === "1";
     if (reincarnateOnLoad) sessionStorage.removeItem("tm-reincarnate");
@@ -52635,7 +53047,8 @@ void main() {
         camera,
         canvas,
         onPlay: openMemory,
-        sfx
+        sfx,
+        startStage: state.stage
       });
       memory = createMemoryOverlay({
         onComplete: completeMemory,
@@ -52714,6 +53127,11 @@ void main() {
     if (!player) return;
     player.setWalkPace(walkPaceForAge(currentAge()));
     family?.setStage(state.stage, player);
+    interactions?.setStage(state.stage);
+    if (state.stage < 10) {
+      cyclePrompt?.classList.add("is-hidden");
+      state.cyclePrompt = false;
+    }
     updateFamilyTag();
     updateHUD();
     if (world) {
@@ -52762,6 +53180,7 @@ void main() {
     updateHUD();
     player.setWalkPace(walkPaceForAge(currentAge()));
     gameAudio?.setAge(state.stage);
+    interactions.setStage(state.stage);
     interactions.depart(zone);
     state.busy = true;
     controlHint.classList.add("is-hidden");
@@ -52808,6 +53227,8 @@ void main() {
   }
   function startFinalWalk() {
     if (finale.active || !player) return;
+    state.cyclePrompt = false;
+    cyclePrompt?.classList.add("is-hidden");
     state.ended = true;
     state.busy = false;
     state.endPrompt = false;
@@ -52871,6 +53292,8 @@ void main() {
     }
   }
   function showEpilogue() {
+    state.cyclePrompt = false;
+    cyclePrompt?.classList.add("is-hidden");
     if (whiteout) whiteout.style.opacity = "0";
     if (rebirth) {
       rebirth.classList.remove("is-visible");
@@ -52897,6 +53320,8 @@ void main() {
     sfx("seal");
   }
   function showEnding() {
+    state.cyclePrompt = false;
+    cyclePrompt?.classList.add("is-hidden");
     if (whiteout) whiteout.style.opacity = "0";
     if (rebirth) {
       rebirth.classList.remove("is-visible");
@@ -52931,6 +53356,21 @@ void main() {
     ending.classList.remove("is-gone");
     sfx("seal");
   }
+  function checkEntrance() {
+    if (!state.started || state.busy || state.ended || state.inMemory || state.endPrompt || state.cyclePrompt || finale.active) return;
+    if (state.stage < 10 || state.completed < 10 || !player) {
+      cycleDismissed = false;
+      return;
+    }
+    const x = player.root.position.x;
+    if (x > -34) cycleDismissed = false;
+    if (x > -38.2 || cycleDismissed) return;
+    state.cyclePrompt = true;
+    cyclePrompt?.classList.remove("is-hidden");
+    joystick.classList.add("is-hidden");
+    controlHint.classList.add("is-hidden");
+    updateLightCue();
+  }
   function checkStreetEnd() {
     if (!state.started || state.busy || state.ended || state.inMemory || !player) return;
     if (player.root.position.x < 39) return;
@@ -52959,6 +53399,16 @@ void main() {
     state.endPrompt = false;
     startFinalWalk();
   }
+  cycleYes?.addEventListener("click", () => {
+    cyclePrompt?.classList.add("is-hidden");
+    chooseRelive();
+  });
+  cycleStay?.addEventListener("click", () => {
+    cyclePrompt?.classList.add("is-hidden");
+    state.cyclePrompt = false;
+    cycleDismissed = true;
+    updateLightCue();
+  });
   reliveYes?.addEventListener("click", chooseRelive);
   reliveEnough?.addEventListener("click", chooseEnough);
   function walkSpeedForAge(age) {
@@ -52973,7 +53423,7 @@ void main() {
     return AGES[state.stage]?.age || 7;
   }
   function movementInput() {
-    if (!state.started || state.busy || state.ended || state.inMemory || state.endPrompt) return { x: 0, z: 0 };
+    if (!state.started || state.busy || state.ended || state.inMemory || state.endPrompt || state.cyclePrompt) return { x: 0, z: 0 };
     let mx = 0, mz = 0;
     if (keys.has("a") || keys.has("arrowleft")) mx -= 1;
     if (keys.has("d") || keys.has("arrowright")) mx += 1;
@@ -52994,7 +53444,7 @@ void main() {
   }
   function updateLightCue() {
     if (!lightCall || !lightHint || !player) return;
-    const active = state.started && state.stage >= 10 && !state.ended && !state.inMemory && !state.busy && !state.endPrompt;
+    const active = state.started && state.stage >= 10 && !state.ended && !state.inMemory && !state.busy && !state.endPrompt && !state.cyclePrompt;
     const x = player.root.position.x;
     const far = clamp8((39 - x) / 54, 0, 1);
     lightCall.style.opacity = active ? String(0.12 + 0.46 * far) : "0";
@@ -53034,6 +53484,7 @@ void main() {
       if (isTouch3) joystick.classList.toggle("is-hidden", state.busy || state.ended);
     }
     checkStreetEnd();
+    checkEntrance();
     updateLightCue();
     gameAudio?.update(dt, player.root.position.x, player.root.position.z, { endPrompt: state.endPrompt, ended: state.ended });
     renderer.render(scene, camera);
@@ -53156,10 +53607,13 @@ void main() {
       const stageNo = Math.max(0, Math.min(10, Number(n) || 0));
       state.completed = stageNo;
       state.stage = stageNo;
+      state.cyclePrompt = false;
+      cyclePrompt?.classList.add("is-hidden");
       player.setStage(stageNo, true);
       player.setWalkPace(walkPaceForAge(currentAge()));
       gameAudio?.setAge(stageNo);
       family?.setStage(stageNo, player);
+      interactions?.setStage(stageNo);
       updateFamilyTag();
       updateHUD();
       const c = world.setEra(stageNo / 10);
@@ -53173,6 +53627,7 @@ void main() {
       player.setWalkPace(walkPaceForAge(77));
       gameAudio?.setAge(10);
       family?.setStage(10, player);
+      interactions?.setStage(10);
       updateFamilyTag();
       renderer.setClearColor(world.setEra(1), 1);
       updateHUD();
