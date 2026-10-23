@@ -941,34 +941,19 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--red);outline-offset
 }
 
 
-/* ---------------------------------------------------- intro childhood kid */
-.intro-side{
-  grid-column:2;grid-row:1 / span 2;align-self:end;
-  display:flex;flex-direction:column;align-items:center;gap:12px;min-width:0;
+
+
+/* ------------------------------------------------- intro pixel kid */
+.intro-brand{gap:10px}
+.intro-pixel-kid{
+  display:inline-flex;align-self:flex-end;margin:0 0 0 2px;
+  width:26px;height:38px;image-rendering:pixelated;image-rendering:crisp-edges;
+  transform-origin:50% 100%;animation:pixelKidBob 2.4s steps(2,end) infinite;
 }
-.intro-side .intro-lede{grid-column:auto;grid-row:auto;align-self:auto;margin:0;max-width:330px}
-.intro-kid{
-  position:relative;width:clamp(142px,15vw,198px);padding:9px 10px 7px;
-  background:#f5ead6;border:1px solid rgba(60,44,27,.24);
-  box-shadow:0 18px 36px rgba(62,43,24,.16);transform:rotate(-1.6deg);
-  animation:kidBreathe 5.8s ease-in-out infinite;
-}
-.intro-kid:before{
-  content:"";position:absolute;inset:4px;border:1px solid rgba(184,60,44,.18);pointer-events:none;
-}
-.intro-kid-tape{
-  position:absolute;top:-7px;left:50%;width:52px;height:15px;transform:translateX(-50%) rotate(2deg);
-  background:rgba(222,205,170,.78);box-shadow:0 1px 3px rgba(50,36,20,.12);
-}
-.intro-kid svg{display:block;width:100%;height:auto;filter:saturate(.9) contrast(.98)}
-.intro-kid-caption{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-top:3px;padding:0 2px}
-.intro-kid-caption b{font-family:var(--font-brush);font-size:15px;font-weight:400;letter-spacing:.08em;color:#5a3826}
-.intro-kid-caption span{font-family:var(--mono);font-size:6px;letter-spacing:.08em;color:#9d8064;white-space:nowrap}
-@keyframes kidBreathe{0%,100%{transform:rotate(-1.6deg) translateY(0)}50%{transform:rotate(-1.2deg) translateY(-3px)}}
+.intro-pixel-kid svg{display:block;width:100%;height:100%;overflow:visible}
+@keyframes pixelKidBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-2px)}}
 @media (max-width:860px){
-  .intro-side{display:block;grid-column:auto;grid-row:auto}
-  .intro-kid{display:none}
-  .intro-side .intro-lede{margin:17px 0 0;max-width:none}
+  .intro-pixel-kid{width:22px;height:32px;margin-left:1px}
 }
 
 </style>
@@ -1103,6 +1088,33 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--red);outline-offset
               <span class="intro-brand-title">旧时光</span>
               <span class="intro-brand-sub">中国记忆十景 · DEEPSEEK 制作</span>
             </div>
+            <span class="intro-pixel-kid" aria-label="七岁的小满">
+              <svg viewBox="0 0 18 26" shape-rendering="crispEdges" aria-hidden="true">
+                <rect x="4" y="1" width="10" height="1" fill="#2b231c"/>
+                <rect x="3" y="2" width="12" height="1" fill="#2b231c"/>
+                <rect x="2" y="3" width="14" height="3" fill="#2b231c"/>
+                <rect x="3" y="6" width="2" height="3" fill="#2b231c"/>
+                <rect x="13" y="6" width="2" height="3" fill="#2b231c"/>
+                <rect x="5" y="4" width="8" height="6" fill="#e3b08d"/>
+                <rect x="6" y="7" width="1" height="1" fill="#2b231c"/>
+                <rect x="11" y="7" width="1" height="1" fill="#2b231c"/>
+                <rect x="8" y="9" width="2" height="1" fill="#b56d58"/>
+                <rect x="4" y="10" width="10" height="6" fill="#b84a32"/>
+                <rect x="4" y="10" width="10" height="1" fill="#cf5d46"/>
+                <rect x="8" y="10" width="2" height="1" fill="#f0d9b5"/>
+                <rect x="2" y="11" width="2" height="5" fill="#e3b08d"/>
+                <rect x="14" y="11" width="2" height="5" fill="#e3b08d"/>
+                <rect x="4" y="16" width="10" height="3" fill="#3f4c5c"/>
+                <rect x="5" y="19" width="2" height="3" fill="#e3b08d"/>
+                <rect x="11" y="19" width="2" height="3" fill="#e3b08d"/>
+                <rect x="5" y="22" width="2" height="1" fill="#f1eadb"/>
+                <rect x="11" y="22" width="2" height="1" fill="#f1eadb"/>
+                <rect x="4" y="23" width="3" height="2" fill="#4f473b"/>
+                <rect x="11" y="23" width="3" height="2" fill="#4f473b"/>
+                <circle cx="16" cy="14" r="2.6" fill="none" stroke="#8f8a7d" stroke-width="1"/>
+                <rect x="14" y="14" width="4" height="1" fill="#6e5942"/>
+              </svg>
+            </span>
           </div>
           <div class="intro-top-right">
             <span class="intro-edition">七岁 → 七十七岁<small>DeepSeek 制作</small></span>
@@ -1112,46 +1124,7 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--red);outline-offset
         <div class="intro-main">
           <p class="eyebrow"><i></i>1980s — 一条街，一辈子</p>
           <h1>童年<br><span>地图</span></h1>
-          <div class="intro-side">
-            <div class="intro-kid" aria-hidden="true">
-              <span class="intro-kid-tape"></span>
-              <svg viewBox="0 0 240 330" role="img" aria-label="七岁的小满，穿红上衣蓝短裤，拿着铁环">
-                <ellipse cx="120" cy="313" rx="61" ry="12" fill="rgba(80,61,40,.14)"/>
-                <g class="kid-body">
-                  <path d="M91 211h18v53H91z" fill="#d9a17e"/>
-                  <path d="M132 211h18v53h-18z" fill="#d9a17e"/>
-                  <path d="M88 258h23v17H88z" fill="#f2eadc"/>
-                  <path d="M130 258h23v17h-23z" fill="#f2eadc"/>
-                  <path d="M82 273h31c5 0 7 4 6 8l-3 14H86l-3-14c-1-4 1-8 6-8z" fill="#f5efe2" stroke="#b6a68e" stroke-width="1.2"/>
-                  <path d="M129 273h30c5 0 8 4 7 8l-3 14h-30l-3-14c-1-4 1-8 6-8z" fill="#f5efe2" stroke="#b6a68e" stroke-width="1.2"/>
-                  <path d="M88 282h27M133 282h28" stroke="#b84a32" stroke-width="3"/>
-                  <path d="M77 162c5-10 19-15 43-15s38 5 43 15l-4 27c-1 6-7 10-13 9l-17-3-9 29-10-29-17 3c-6 1-12-3-13-9z" fill="#3f4c5c"/>
-                  <path d="M91 177h58l-4 15H95z" fill="#34404e"/>
-                  <path d="M68 103c6-9 22-14 52-14s46 5 52 14l-3 32-16 8-10-10H97l-10 10-16-8z" fill="#b84a32"/>
-                  <path d="M95 96h50l-5 17H100z" fill="#c75c46"/>
-                  <path d="M74 113l-23 27c-4 5-2 13 4 16l7 3 14-24 12-13z" fill="#b84a32"/>
-                  <path d="M166 113l23 27c4 5 2 13-4 16l-7 3-14-24-12-13z" fill="#b84a32"/>
-                  <path d="M53 139c-5 1-7 7-4 11l3 5 15-8-4-8c-3-5-6-2-10 0z" fill="#d9a17e"/>
-                  <path d="M187 139c5 1 7 7 4 11l-3 5-15-8 4-8c3-5 6-2 10 0z" fill="#d9a17e"/>
-                  <path d="M166 148l31-14" stroke="#6d5a43" stroke-width="5" stroke-linecap="round"/>
-                  <circle cx="202" cy="130" r="35" fill="none" stroke="#9a968b" stroke-width="4"/>
-                  <circle cx="202" cy="130" r="31" fill="none" stroke="#d8d1c0" stroke-width="2"/>
-                  <path d="M193 119l4 23M208 116l-4 27" stroke="#6d5a43" stroke-width="4" stroke-linecap="round"/>
-                  <circle cx="120" cy="66" r="43" fill="#e4b28e"/>
-                  <path d="M78 66c0-28 16-47 42-47s42 19 42 47l-12-2-6 17-9-17-17 15-11-16-13 16-7-13z" fill="#2c241d"/>
-                  <path d="M78 64c-5-2-8 3-7 8 1 9 7 17 13 18l4-12zM162 64c5-2 8 3 7 8-1 9-7 17-13 18l-4-12z" fill="#2c241d"/>
-                  <circle cx="103" cy="72" r="3.2" fill="#2a2119"/>
-                  <circle cx="137" cy="72" r="3.2" fill="#2a2119"/>
-                  <path d="M96 61c4-3 10-3 14 0M130 61c4-3 10-3 14 0" stroke="#3f3127" stroke-width="2" stroke-linecap="round" fill="none"/>
-                  <path d="M113 88c4 3 10 3 14 0" stroke="#9e5646" stroke-width="2.2" stroke-linecap="round" fill="none"/>
-                  <circle cx="92" cy="86" r="6" fill="#d9937d" opacity=".35"/>
-                  <circle cx="148" cy="86" r="6" fill="#d9937d" opacity=".35"/>
-                </g>
-              </svg>
-              <div class="intro-kid-caption"><b>小满</b><span>七岁 · 1980s</span></div>
-            </div>
-            <p class="intro-lede">七岁的小满，住进了一条老街。<br>街上有十位老人、十件旧事。走到他们身边，他们会先开口。</p>
-          </div>
+          <p class="intro-lede">七岁的小满，住进了一条老街。<br>街上有十位老人、十件旧事。走到他们身边，他们会先开口。</p>
           <div class="intro-actions">
             <button id="startBtn" class="start-btn" type="button" disabled>正在摆好街坊…</button>
             <span class="intro-note">WASD / 方向键走路 · 走近老人，直接动手</span>
