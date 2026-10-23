@@ -13,7 +13,7 @@
 <p align="center">
   <a href="https://sanbuphy.github.io/ten-memories-game/"><strong>▶ 在线游玩</strong></a>
   &nbsp;·&nbsp;
-  <a href="https://github.com/sanbuphy/ten-memories-game/raw/main/index.html"><strong>下载单文件版</strong></a>
+  <a href="https://github.com/sanbuphy/ten-memories-game/raw/main/ten-memories-game.html"><strong>下载单文件版</strong></a>
   &nbsp;·&nbsp;
   <a href="https://github.com/sanbuphy/ten-memories-game">GitHub</a>
 </p>
@@ -130,13 +130,14 @@
 
 - 电脑：Chrome / Edge / Safari / Firefox。
 - 手机：竖屏或横屏都可以；横屏时开场也会自动收成紧凑版，不会挡住“开始走”。左下摇杆走路，按钮和对话框避开安全区。
-- 首次打开会下载约 **7.4 MB** 的单文件页面（Three.js、字体、13 段音频全部内联），稍等几秒。
+- 在线版首屏只加载约 **1 MB** 的页面、样式和程序；13 段音乐在开始走之后按需加载，不会再为了等音频卡在加载页。
+- 手机横屏、竖屏都已适配；第一次打开如果网络慢，按钮会提示“还在加载”。
 - 不需要登录，不需要联网存档；刷新会从头开始。
 - 游戏没有自动存档，建议一次走完。
 
 ### 下载离线版
 
-[**index.html**](https://github.com/sanbuphy/ten-memories-game/raw/main/index.html)（约 7.4 MB）
+[**ten-memories-game.html**](https://github.com/sanbuphy/ten-memories-game/raw/main/ten-memories-game.html)（约 6.2 MB，音频、字体、程序全部内联）
 
 下载后双击即可用浏览器打开；不依赖任何外部资源，也不需要服务器。
 
@@ -265,7 +266,7 @@
 - 天色、雾、太阳角度、环境光和最后那盏门灯，一起跟着年龄走。
 - 家人的位置、步态和搀扶方向都按玩家真实朝向计算。
 - 音频是原创钢琴主题、合成环境声和中文语音合成，没有采样任何现有歌曲或影视录音。
-- 单文件构建把 Three.js、字体、场景、音频全部内联，所以它可以离线，也可以被随便拷贝到一个 U 盘里。
+- 在线版把程序、字体和音频拆开，首屏更轻；离线版再把它们全部内联成一个文件。
 
 ### 技术
 
@@ -325,7 +326,7 @@ open ../ten-memories-game.html
 - 走进光里、白屏、新生、街心全家福一起鞠躬又四散，最后才出现文字尾声
 - 手机横竖屏适配、安全区摇杆、加大“一起玩”按钮
 - 右上角 +1 / +5 测试快进和 GitHub 入口
-- 单文件离线版（含 13 段音频）
+- 轻量在线版（程序约 1 MB，音乐按需加载）与 6.2 MB 单文件离线版
 - README、页面 metadata、description 与关键词均标注 **DeepSeek 制作**
 
 ## 反馈
